@@ -7,7 +7,8 @@ from random import *
 
 benfollowups = [' ' , ',' , '!' , '?' , '.', ':']
 file = "wordle.json"
-client = discord.Client()
+intents = discord.Intents().all()
+client = discord.Client(intents=intents)
 userDick = dict({})
 
 
@@ -25,7 +26,7 @@ async def on_message(message):
     if message.author == client.user:
         return
     if(message.content.lower() == 'ben cmd'):
-        await message.channel.send('---[BASIC INFO]---\n```just type \'ben [your question here]\' for a magical experience```\n---[IN WORDLE-ENTHUSIASTS ONLY]---\n```\'ben mystats [day]\' for day\'s result\n\'ben overall @[the dork u want to alert to your shenanigans]\' for overall info```')
+        await message.channel.send('---[BASIC INFO]---\n```just type \'ben [your question here]\' for a magical experience```\n---[IN WORDLE-ENTHUSIASTS ONLY]---\n```\'ben mystats [day]\' for day\'s result\n\'ben overall @[the dork u want to alert to your shenanigans]\' for overall info\n\'ben daywinner [day]\' for the day\'s winners```')
         return
     if(message.channel.name == 'wordle-enthusiasts'):
         bigboy = str(message.author.id)
@@ -40,8 +41,17 @@ async def on_message(message):
             return
         if message.content.lower().startswith('ben mystats '):
             thatday = message.content.split(' ')[2]
-            await displayDay(message,thatday,bigboy)
+            if(thatday.isdecimal() and int(thatday) >= 0):
+                await displayDay(message,thatday,bigboy)
+            else:
+                await message.channel.send('that\'s not a day moron')
             return
+        if message.content.lower().startswith('ben daywinner '):
+            thatday = message.content.split(' ')[2]
+            if(thatday.isdecimal() and int(thatday) >= 0):
+                await displayWinner(message,thatday)
+            else:
+                await message.channel.send('that\'s not a day moron')
         if message.content.lower().startswith('ben overall'):
             for boy in message.mentions:
                 await displayOverall(message, str(boy.id))
@@ -92,6 +102,31 @@ async def displayDay(message,day,author):
         await message.channel.send('you didnt do it retard')
         return
 
+async def displayWinner(message,day):
+    global userDick
+    guild = message.guild
+    winners = 0
+    outStr = 'The winner(s) for Wordle ' + day + ': '
+    winnerList = []
+    guess = 7
+    for men in userDick:
+        if(day in userDick[men]):
+            if(userDick[men][day] < guess and userDick[men][day] > 0):
+                winnerList.clear()
+                winnerList.append(men)
+                guess = userDick[men][day]
+            elif(userDick[men][day] == guess):
+                winnerList.append(men)
+    for men in winnerList:
+        winners += 1
+        user = guild.get_member(int(men))
+        outStr += user.nick + ', '
+    #outStr = outStr[:,-2]
+    outStr += 'with ' + str(guess) + ' guesses.'
+    if(winners == 0):
+        outStr = 'Nobody won Wordle ' + day
+    await message.channel.send(outStr)
+
 async def displayOverall(message,bigboy):
     global userDick
     if bigboy not in userDick:
@@ -104,6 +139,8 @@ async def displayOverall(message,bigboy):
     wCnt = 0.0
     for key in sorted(userDick[bigboy]):
         if(prevDay != -1 and (int(key) - prevDay > 1)):
+            if(streakC > streakT):
+                streakT = streakC
             streakC = 0
         if userDick[bigboy][key] != -1:
             wCnt += 1
@@ -118,4 +155,4 @@ async def displayOverall(message,bigboy):
     await message.channel.send('Total games played: ' + str(wTot) + '\nWinrate: ' + '{pct:.2f}'.format(pct = (wCnt * 100)/wTot) + '%\nCurrent streak: ' + str(streakC) + '\nLongest streak: ' + str(streakT))
 
 signal.signal(signal.SIGINT, signal_handler)
-client.run([your bot token here])
+client.run('you're token heer')
